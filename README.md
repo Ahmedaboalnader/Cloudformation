@@ -55,8 +55,9 @@ The stack is designed for scalability, high availability, and automation.
 git clone https://github.com/Ahmedaboalnader/Cloudformation.git
 cd Cloudformation/myapp-infra
 
-aws cloudformation create-stack  
-  --stack-name myapp-root-stack 
-  --template-url https://ahmed15102002.s3.amazonaws.com/templates/main.yaml 
-  --capabilities CAPABILITY_NAMED_IAM  
+aws cloudformation create-stack \
+  --stack-name myapp-root-stack \
+  --template-body file://myapp-root-stack.yaml \
+  --parameters ParameterKey=KeyName,ParameterValue=your-key \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1

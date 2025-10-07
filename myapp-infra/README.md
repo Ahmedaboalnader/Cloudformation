@@ -1,7 +1,7 @@
 # 🏗️ AWS CloudFormation – App Demo Infrastructure
 
 ## 📸 Project Architecture
-![Architecture Diagram](myapp-infra/images/image.png)
+![Architecture Diagram]()
 > A visual representation of the deployed infrastructure (VPC, Subnets, Load Balancer, EC2, RDS, and Auto Scaling).
 
 ---

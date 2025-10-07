@@ -1,0 +1,198 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Compute Layer: Bastion, Classic Load Balancers, Launch Templates, Auto Scaling Groups'
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: The VPC ID
+  PublicSubnets:
+    Type: CommaDelimitedList
+    Description: List of Public Subnet IDs
+  PrivateSubnets:
+    Type: CommaDelimitedList
+    Description: List of Private Subnet IDs
+  KeyName:
+    Type: String
+    Description: EC2 Key Pair
+  ALBSecurityGroupId:
+    Type: String
+    Description: Security Group ID for Load Balancers
+  EC2SecurityGroupId:
+    Type: String
+    Description: Security Group ID for EC2
+  RDSInstanceEndpoint:
+    Type: String
+    Description: Endpoint of the RDS instance
+
+  FrontendImage:
+    Type: String
+    Default: ahmedmostafa22/myapp-frontend:latest
+
+  BackendImage:
+    Type: String
+    Default: ahmedmostafa22/myapp-backend:latest  
+
+  
+
+Resources:
+  
+  # Bastion Host
+  
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: ami-0c7217cdde317cfec # Amazon Linux 2023 (us-east-1)
+      KeyName: !Ref KeyName
+      SubnetId: !Select [0, !Ref PublicSubnets]
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroupId
+      Tags:
+        - Key: Name
+          Value: BastionHost
+
+  
+  # Load Balancers
+  WebLB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Subnets: !Ref PublicSubnets
+      SecurityGroups:
+        - !Ref ALBSecurityGroupId
+      Listeners:
+        - LoadBalancerPort: 80
+          InstancePort: 80
+          Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: 2
+        UnhealthyThreshold: 2
+        Interval: 30
+        Timeout: 5
+      CrossZone: true
+
+  AppLB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Subnets: !Ref PrivateSubnets
+      SecurityGroups:
+        - !Ref ALBSecurityGroupId
+      Listeners:
+        - LoadBalancerPort: 4000
+          InstancePort: 4000
+          Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:4000/
+        HealthyThreshold: 2
+        UnhealthyThreshold: 2
+        Interval: 30
+        Timeout: 5
+      CrossZone: true
+
+
+  # Launch Templates
+  FrontendLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: ami-0360c520857e3138f
+        InstanceType: t3.micro
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+          - !Ref EC2SecurityGroupId
+        Tags:
+        - Key: Name
+          Value: frontend
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            apt-get update -y
+            apt-get install -y docker.io
+            systemctl start docker
+            systemctl enable docker
+            docker pull ${FrontendImage}
+            docker stop frontend || true
+            docker rm frontend || true
+            docker run -d --name frontend -p 80:80 ${FrontendImage}
+
+
+  BackendLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: ami-0360c520857e3138f
+        InstanceType: t3.micro
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+          - !Ref EC2SecurityGroupId
+        Tags:
+        - Key: Name
+          Value: backend  
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            apt-get update -y
+            apt-get install -y docker.io
+            systemctl start docker
+            systemctl enable docker
+            docker pull ${BackendImage}
+            docker stop backend || true
+            docker rm backend || true
+            docker run -d --name backend -p 4000:4000 ${BackendImage}
+
+  # Auto Scaling Groups
+  FrontendASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref PublicSubnets
+      LaunchTemplate:
+        LaunchTemplateId: !Ref FrontendLaunchTemplate
+        Version: !GetAtt FrontendLaunchTemplate.LatestVersionNumber
+      MinSize: 2
+      MaxSize: 4
+      DesiredCapacity: 2
+      LoadBalancerNames:
+        - !Ref WebLB
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 120
+
+  BackendASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref PrivateSubnets
+      LaunchTemplate:
+        LaunchTemplateId: !Ref BackendLaunchTemplate
+        Version: !GetAtt BackendLaunchTemplate.LatestVersionNumber
+      MinSize: 2
+      MaxSize: 4
+      DesiredCapacity: 2
+      LoadBalancerNames:
+        - !Ref AppLB
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 120
+
+
+Outputs:
+  BastionHostId:
+    Description: Bastion Host Instance ID
+    Value: !Ref BastionHost
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionHostId'
+
+  BastionPublicIP:
+    Description: Public IP of Bastion Host
+    Value: !GetAtt BastionHost.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionPublicIP'
+
+  LoadBalancerDNS:
+    Description: Web Load Balancer DNS
+    Value: !GetAtt WebLB.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerDNS'
+
+  AppLBDNS:
+    Description: App Load Balancer DNS
+    Value: !GetAtt AppLB.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-AppLBDNS'

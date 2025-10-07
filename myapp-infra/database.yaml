@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'RDS Database setup (MySQL)'
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: The VPC ID
+  PrivateSubnets:
+    Type: CommaDelimitedList
+    Description: List of private subnet IDs
+  RDSSecurityGroupId:
+    Type: String
+    Description: Security Group ID for RDS
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: 'Subnet group for RDS'
+      SubnetIds: !Ref PrivateSubnets
+
+  MyRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: myappdb
+      Engine: mysql
+      EngineVersion: "8.0.42"
+      MasterUsername: admin
+      MasterUserPassword: MyStrongPassword123
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroupId
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+      DeletionProtection: false
+      BackupRetentionPeriod: 1
+      MultiAZ: false
+      StorageType: gp2
+
+Outputs:
+  RDSInstanceEndpoint:
+    Description: RDS Instance Endpoint
+    Value: !GetAtt MyRDSInstance.Endpoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-RDSInstanceEndpoint'
+
+  RDSInstanceIdentifier:
+    Description: RDS Instance Identifier
+    Value: !Ref MyRDSInstance
+    Export:
+      Name: !Sub '${AWS::StackName}-RDSInstanceIdentifier'

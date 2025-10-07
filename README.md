@@ -8,7 +8,7 @@
 
 ## 🎥 Project Demo
 🎬 Watch the demo video:  
-[Click here to view the video](./videos/demo.mp4)
+[Click here to view the video](myapp-infra/videos/video.mp4)
 
 ---
 

@@ -1,18 +1,18 @@
-# 🏗️ AWS CloudFormation – App Demo Infrastructure
+#  AWS CloudFormation – App Demo Infrastructure
 
-## 📸 Project Architecture
+##  Project Architecture
 ![Architecture Diagram](myapp-infra/images/image.png)
 > A visual representation of the deployed infrastructure (VPC, Subnets, Load Balancer, EC2, RDS, and Auto Scaling).
 
 ---
 
-## 🎥 Project Demo
-🎬 Watch the demo video:  
+##  Project Demo
+ Watch the demo video:  
 [Click here to view the video](myapp-infra/videos/video.mp4)
 
 ---
 
-## 🚀 Project Overview
+##  Project Overview
 This project automates the deployment of a **complete 3-tier infrastructure** using **AWS CloudFormation**.  
 The stack is designed for scalability, high availability, and automation.
 
@@ -28,7 +28,7 @@ The stack is designed for scalability, high availability, and automation.
 
 ---
 
-## ⚙️ How It Works
+##  How It Works
 1. **Database Stack** – Creates the RDS instance inside private subnets.  
 2. **Compute Stack** –  
    - Deploys a Bastion Host in the public subnet.  
@@ -39,7 +39,7 @@ The stack is designed for scalability, high availability, and automation.
 
 ---
 
-## 🧩 Tech Stack
+##  Tech Stack
 - AWS CloudFormation  
 - Amazon EC2  
 - Elastic Load Balancer (Classic + ALB)  
@@ -50,7 +50,7 @@ The stack is designed for scalability, high availability, and automation.
 
 ---
 
-## 🪜 Deployment Instructions
+##  Deployment Instructions
 ```bash
 git clone https://github.com/Ahmedaboalnader/Cloudformation.git
 cd Cloudformation/myapp-infra
